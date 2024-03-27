@@ -49,7 +49,7 @@ do
         if [[ $APP =~ "config-server" ]]
         then
           echo ""
-          cf ssh config-server -c "grep -iRH profiles /home/vcap/app/config-repo-default/*" 
+          cf ssh config-server -c "grep -iRH profile /home/vcap/app/config-repo-default/*" 
           
           ### Find apps bound to this service
           echo ""
@@ -76,7 +76,12 @@ do
             #echo "App org: $APP_ORG"
             APP_ORG_NAME=`echo $APP_ORG | jq --raw-output '.entity.name'`
             #echo "App org name: $APP_ORG_NAME"
-            echo "org=$APP_ORG_NAME, space=$APP_SPACE_NAME, app=$APP_NAME, app_guid=$APP_GUID"
+
+            # Fetch the Spring Boot version of the app
+            cf target -o $APP_ORG_NAME -s $APP_SPACE_NAME
+            BOOT_VERSION=`cf ssh $APP_NAME -c "grep -iRH Spring-Boot-Version /home/vcap/app/META-INF/MANIFEST.MF" | sed -e 's/.* //' -e 's/\n$//'`
+
+            echo "org: $APP_ORG_NAME, space: $APP_SPACE_NAME, app: $APP_NAME, app_guid: $APP_GUID, boot-version: $BOOT_VERSION"
           done
           echo "=================================================================="
           echo ""
