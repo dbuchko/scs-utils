@@ -10,16 +10,15 @@
 
 DATE=`date`
 echo "Scan for profiles - $DATE"
-echo "============================================================="
 export ORG='p-spring-cloud-services'
-cf t -o $ORG
+cf t -o $ORG >/dev/null 2>&1
 cf spaces |
 while read SPACE
 do
   STR_LENGTH=`echo $SPACE | wc -c`
   if [ $STR_LENGTH -eq 37 ]
   then
-    echo "============================"
+    echo "==========================================================================="
     SI_CURL=`cf curl /v2/service_instances/$SPACE`
     SERVICE_NAME=`echo $SI_CURL | jq '.entity.name'`
 
@@ -37,29 +36,29 @@ do
 
     if [[ $SI_CURL =~ "config-server" ]]
     then
-      cf t -s $SPACE
-      echo "-------------------"
+      cf t -o $ORG -s $SPACE
+      echo "---------------------------------------------------------------------------"
       echo "ORG          - $ORG_NAME"
       echo "SPACE        - $SPACE_NAME"
       echo "SERVICE NAME - $SERVICE_NAME"
       echo "SI GUID      - $SPACE"
+      echo ""
       cf apps |
       while read APP
       do
         if [[ $APP =~ "config-server" ]]
         then
-          echo ""
-          cf ssh config-server -c "grep -iRH profile /home/vcap/app/config-repo-default/*" 
+          echo "CHECKING FOR USAGE OF DEPRECATED spring.profiles IN $SERVICE_NAME"
+          echo "---------------------------------------------------------------------------"
+          cf ssh config-server -c "grep -iRH profiles /home/vcap/app/config-repo-default/*" 
+          echo "---------------------------------------------------------------------------"
           
           ### Find apps bound to this service
           echo ""
-          echo "---------------------------"
           echo "APPS BOUND TO $SERVICE_NAME"
-          echo "---------------------------"
+          echo "---------------------------------------------------------------------------"
           BINDINGS=$(cf curl "/v2/service_instances/$SPACE/service_bindings")
-          #printf "BINDINGS:\n%s\n" "$BINDINGS"
-          echo "$BINDINGS" | jq --raw-output '.resources[].entity.app_url' | while read -r APP_URL
-          do
+          for APP_URL in $(echo "${BINDINGS}" | jq -r '.resources[].entity.app_url'); do
             #echo "App URL: $APP_URL"
             APP=`cf curl $APP_URL`
             APP_GUID=`echo $APP | jq --raw-output '.metadata.guid'`
@@ -78,12 +77,12 @@ do
             #echo "App org name: $APP_ORG_NAME"
 
             # Fetch the Spring Boot version of the app
-            cf target -o $APP_ORG_NAME -s $APP_SPACE_NAME
+            cf target -o $APP_ORG_NAME -s $APP_SPACE_NAME >/dev/null 2>&1
             BOOT_VERSION=`cf ssh $APP_NAME -c "grep -iRH Spring-Boot-Version /home/vcap/app/META-INF/MANIFEST.MF" | sed -e 's/.* //' -e 's/\n$//'`
 
             echo "org: $APP_ORG_NAME, space: $APP_SPACE_NAME, app: $APP_NAME, app_guid: $APP_GUID, boot-version: $BOOT_VERSION"
           done
-          echo "=================================================================="
+          echo "==========================================================================="
           echo ""
         fi
       done
