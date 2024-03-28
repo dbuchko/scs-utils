@@ -2,6 +2,12 @@
 
 #set -eox pipefail
 
+# DESCRIPTION
+# Used for Spring Boot apps running on Tanzu Application Service (Cloud Foundry) that bind to the SCS Config Server.
+# Ref: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-Config-Data-Migration-Guide
+# This script identifies the SCS config-server SI apps that use the deprecated spring.profiles property. 
+# It will also identify the apps bound to each of those SIs and indicate the Spring Boot version.
+
 # PREREQUISITES
 # - User must be logged in with UAA admin credentials before executing this script.
 # - CF SSH permission must be enabled.
